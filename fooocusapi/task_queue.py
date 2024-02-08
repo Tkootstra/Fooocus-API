@@ -129,7 +129,7 @@ class TaskQueue(object):
             # Use the task's webhook_url if available, else use the default
             webhook_url = task.webhook_url or self.webhook_url
 
-            data = { "job_id": task.job_id, "job_result": [] }
+            data = {"job_id": task.job_id, "job_result": []}
             
             if isinstance(task.task_result, List):
                 for item in task.task_result:

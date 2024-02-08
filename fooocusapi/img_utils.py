@@ -38,6 +38,7 @@ def read_input_image(input_image: UploadFile | None) -> np.ndarray | None:
     image = np.array(pil_image)
     return image
 
+
 def base64_to_stream(image: str) -> UploadFile | None:
     if image == '':
         return None
@@ -50,6 +51,7 @@ def base64_to_stream(image: str) -> UploadFile | None:
     byte_stream.write(image_bytes)
     byte_stream.seek(0)
     return UploadFile(file=byte_stream)
+
 
 def get_check_image(url: str) -> UploadFile | None:
     if url == '':

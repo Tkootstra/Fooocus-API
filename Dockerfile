@@ -18,4 +18,4 @@ WORKDIR /app
 
 COPY . /app/
 
-CMD python3 main.py --host 0.0.0.0 --port 8888
+CMD python main.py --port 8000 --host 0.0.0.0 --apikey 5d1c8432-a0e0-42f9-8d53-c1fd3f301b8f

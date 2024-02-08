@@ -5,12 +5,38 @@ import os
 import numpy as np
 from PIL import Image
 import uuid
+from pathlib import Path
+
 
 output_dir = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', 'outputs', 'files'))
 os.makedirs(output_dir, exist_ok=True)
 
 static_serve_base_url = 'http://127.0.0.1:8888/files/'
+
+
+def rm_tree(pth: Path):
+    pth = Path(pth)
+    for child in pth.glob('*'):
+        if child.is_file():
+            child.unlink()
+        else:
+            rm_tree(child)
+    pth.rmdir()
+
+
+# auxiliary function to delete all image folders that are not of today to save space
+def delete_redundant_outputs(pt: Path | str) -> None:
+    pt = Path(pt)
+    image_subdirs = [path for path in pt.iterdir() if path.is_dir()]
+    current_time = datetime.datetime.now()
+    date_string = current_time.strftime("%Y-%m-%d")
+    # keep the current data dir
+    current_date_dir = pt / date_string
+
+    for delete_path in image_subdirs:
+        if delete_path == current_date_dir: continue
+        rm_tree(delete_path)
 
 
 def save_output_file(img: np.ndarray) -> str:
@@ -22,6 +48,7 @@ def save_output_file(img: np.ndarray) -> str:
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     Image.fromarray(img).save(file_path)
+    delete_redundant_outputs(pt=output_dir)
     return filename
 
 
