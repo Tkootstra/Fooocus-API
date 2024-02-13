@@ -1,10 +1,16 @@
+import os
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from tempfile import NamedTemporaryFile
+import requests
 import uvicorn
-
 from typing import List, Optional
-from fastapi import Depends, FastAPI, Header, Query, Response, UploadFile, APIRouter, Depends
+from fastapi import Depends, FastAPI, Header, Query, Response, UploadFile, APIRouter, File
 from fastapi.params import File
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+import shutil
+from pathlib import Path
+
 
 from fooocusapi.args import args
 from fooocusapi.models import *
@@ -15,7 +21,7 @@ from fooocusapi.task_queue import TaskType
 from fooocusapi.worker import worker_queue, process_top, blocking_get_task_result
 from fooocusapi.models_v2 import *
 from fooocusapi.img_utils import base64_to_stream, read_input_image
-
+from fastapi import FastAPI, Request, HTTPException, status
 from modules.util import HWC3
 
 app = FastAPI()
@@ -133,6 +139,9 @@ def text2img_generation(req: Text2ImgRequest, accept: str = Header(None),
     return call_worker(req, accept)
 
 
+# @secure_router.post("v1/generation/upload-lora", response_model=GeneratedImageResult, responses=img_generate_responses)
+
+
 @secure_router.post("/v2/generation/text-to-image-with-ip", response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
 def text_to_img_with_ip(req: Text2ImgRequestWithPrompt,
                         accept: str = Header(None),
@@ -225,7 +234,6 @@ def img_inpaint_or_outpaint_v2(req: ImgInpaintOrOutpaintRequestJson,
     while len(image_prompts_files) <= 4:
         image_prompts_files.append(default_image_promt)
     req.image_prompts = image_prompts_files
-
     return call_worker(req, accept)
 
 
@@ -304,7 +312,6 @@ def get_history(job_id: str = None, page: int = 0, page_size: int = 20):
             "queue": queue
         }
 
-
 @secure_router.post("/v1/generation/stop", response_model=StopResponse, description="Job stoping")
 def stop():
     stop_worker()
@@ -332,6 +339,60 @@ def all_models():
 
 @secure_router.post("/v1/engines/refresh-models", response_model=AllModelNamesResponse, description="Refresh local files and get all filenames of base model and lora")
 def refresh_models():
+    import modules.config as config
+    config.update_all_model_names()
+    return AllModelNamesResponse(model_filenames=config.model_filenames, lora_filenames=config.lora_filenames)
+
+
+@secure_router.post("/v1/engines/upload-lora", description="Upload lora file")
+def upload_lora(file: UploadFile = File(...)):
+    lora_root = Path(__file__).parent.parent / "repositories" / "Fooocus" / "models" / "loras"
+    save_location = lora_root / file.filename
+    temp = NamedTemporaryFile(delete=False)
+    try:
+        try:
+            contents = file.file.read()
+            with temp as f:
+                f.write(contents)
+        except Exception:
+            raise HTTPException(status_code=500, detail='Error on uploading the file')
+        finally:
+            file.file.close()
+        # save the tempfile to disk
+        shutil.copy(temp.name, save_location)
+    except Exception:
+        raise HTTPException(status_code=500, detail='Something went wrong')
+    finally:
+        os.remove(temp.name)
+        # Delete temp file
+
+    import modules.config as config
+    config.update_all_model_names()
+    return AllModelNamesResponse(model_filenames=config.model_filenames, lora_filenames=config.lora_filenames)
+
+
+@secure_router.post("/v1/engines/upload-checkpoint", description="Upload weights file")
+def upload_weights(file: UploadFile = File(...)):
+    weights_root = Path(__file__).parent.parent / "repositories" / "Fooocus" / "models" / "checkpoints"
+    save_location = weights_root / file.filename
+    temp = NamedTemporaryFile(delete=False)
+    try:
+        try:
+            contents = file.file.read()
+            with temp as f:
+                f.write(contents)
+        except Exception:
+            raise HTTPException(status_code=500, detail='Error on uploading the file')
+        finally:
+            file.file.close()
+        # save the tempfile to disk
+        shutil.copy(temp.name, save_location)
+    except Exception:
+        raise HTTPException(status_code=500, detail='Something went wrong with saving the file')
+    finally:
+        os.remove(temp.name)
+        # Delete temp file
+
     import modules.config as config
     config.update_all_model_names()
     return AllModelNamesResponse(model_filenames=config.model_filenames, lora_filenames=config.lora_filenames)

@@ -51,6 +51,7 @@ class UpscaleOrVaryMethod(str, Enum):
     upscale_fast = 'Upscale (Fast 2x)'
     upscale_custom = 'Upscale (Custom)'
 
+
 class OutpaintExpansion(str, Enum):
     left = 'Left'
     right = 'Right'
