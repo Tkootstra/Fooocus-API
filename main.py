@@ -407,9 +407,6 @@ if __name__ == "__main__":
 
     from fooocusapi.args import args
 
-    args.port = 7999
-    args.host = "0.0.0.0"
-
     if prepare_environments(args):
         sys.argv = [sys.argv[0]]
 
