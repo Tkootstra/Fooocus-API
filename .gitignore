@@ -55,3 +55,4 @@ experiment.py
 /presets
 *.db
 Dockerfile
+examples/test_api.py
