@@ -54,3 +54,4 @@ experiment.py
 .cog/
 /presets
 *.db
+Dockerfile
